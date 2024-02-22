@@ -33,7 +33,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
@@ -101,7 +100,6 @@ class MainActivity : AppCompatActivity() {
             }
             phoneNum = phoneNum.filter { it.isDigit() }
             val formattedPhone = "(${phoneNum.slice(0..2)}) ${phoneNum.slice(3..5)}-${phoneNum.slice(6..9)}"
-            val toastMessage = "$formattedPhone: $message"
             val nagTime = userNagTime.text.toString().toInt()
             if(nagTime == 0) {
                 userNagTime.setText("")
@@ -117,7 +115,6 @@ class MainActivity : AppCompatActivity() {
                 if(broadcastReceiver == null) {
                     broadcastReceiver = object: BroadcastReceiver() {
                         override fun onReceive(context: Context?, intent: Intent?) {
-                            // Toast.makeText(currActivity, toastMessage, Toast.LENGTH_SHORT).show()
                             if (context != null) {
                                 val smsManager: SmsManager?
                                 smsManager = if(Build.VERSION.SDK_INT > 31) {
