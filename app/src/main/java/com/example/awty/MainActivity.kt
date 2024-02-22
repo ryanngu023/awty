@@ -1,14 +1,18 @@
 package com.example.awty
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.telephony.PhoneNumberUtils
+import android.telephony.SmsManager
 import android.util.Log
 import android.text.Editable
 import android.text.TextUtils
@@ -16,15 +20,25 @@ import android.text.TextWatcher
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 
 
 class MainActivity : AppCompatActivity() {
     private var isNagging = false
     private val TAG: String = "MainActivity"
     private var broadcastReceiver: BroadcastReceiver? = null
+    private var message = ""
+    private var phoneNum = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                arrayOf(Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS), 0)
+        }
 
         val userMessage = findViewById<EditText>(R.id.userMessage)
         val userPhoneNum = findViewById<EditText>(R.id.phoneNum)
@@ -76,8 +90,8 @@ class MainActivity : AppCompatActivity() {
         })
 
         startBtn.setOnClickListener {
-            val message = userMessage.text.toString()
-            var phoneNum = userPhoneNum.text.toString()
+            message = userMessage.text.toString()
+            phoneNum = userPhoneNum.text.toString()
             val phonePattern = """^\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}$"""
             if(!Regex(phonePattern).matches(phoneNum)) {
                 userPhoneNum.setText("")
@@ -103,7 +117,24 @@ class MainActivity : AppCompatActivity() {
                 if(broadcastReceiver == null) {
                     broadcastReceiver = object: BroadcastReceiver() {
                         override fun onReceive(context: Context?, intent: Intent?) {
-                            Toast.makeText(currActivity, toastMessage, Toast.LENGTH_SHORT).show()
+                            // Toast.makeText(currActivity, toastMessage, Toast.LENGTH_SHORT).show()
+                            if (context != null) {
+                                val smsManager: SmsManager?
+                                smsManager = if(Build.VERSION.SDK_INT > 31) {
+                                    context.getSystemService(SmsManager::class.java)
+                                } else {
+                                    SmsManager.getDefault()
+                                }
+                                try {
+                                    smsManager?.sendTextMessage("+1$phoneNum",
+                                        null, message, null, null)
+                                    Toast.makeText(currActivity, "Sent Message to $phoneNum", Toast.LENGTH_SHORT).show()
+                                    Log.i(TAG, "$phoneNum")
+                                } catch (e: Exception) {
+                                    Toast.makeText(currActivity, "Failed to send Message.", Toast.LENGTH_SHORT).show()
+                                    Log.i(TAG, "Failed Text: $e")
+                                }
+                            }
                         }
                     }
                     val intentFilter = IntentFilter("edu.uw.ischool.ryanng20.ALARM")
